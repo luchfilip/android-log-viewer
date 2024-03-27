@@ -32,6 +32,10 @@ Follow this link: https://luchfilip.github.io/android-log-viewer/logger
 
 Contributions to improve the Log Viewer are welcome. Feel free to fork the repository and submit pull requests.
 
+## Credits
+
+- ChatGPT
+
 ## License
 
 This project is licensed under the MIT License.
