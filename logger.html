@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Log Viewer</title>
+<style>
+  body { font-family: 'Courier New', monospace; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ddd; padding: 8px; }
+  th { background-color: #4CAF50; color: white; }
+  .info { background-color: #E0FFE0; }
+  .debug { background-color: #E0E0FF; }
+  .warn { background-color: #FFF0E0; }
+  .error { background-color: #FFE0E0; }
+  .verbose { background-color: #F0F0F0; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<input type="file" id="logFileInput" accept=".txt" onchange="loadLogFile()" />
+<br>
+<input type="text" id="levelFilter" onkeyup="filterLogs()" placeholder="Filter by level..." class="hidden" />
+<input type="text" id="tagFilter" onkeyup="filterLogs()" placeholder="Filter by tag..." class="hidden" />
+<input type="text" id="messageFilter" onkeyup="filterLogs()" placeholder="Filter messages..." class="hidden" />
+<br><br>
+<table id="logTable" class="hidden">
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Process ID</th>
+      <th>Tag</th>
+      <th>Package ID</th>
+      <th>Level</th>
+      <th>Message</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Log entries will be populated here -->
+  </tbody>
+</table>
+
+<script>
+function loadLogFile() {
+  const fileInput = document.getElementById('logFileInput');
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const contents = e.target.result;
+    parseLogContents(contents);
+    document.getElementById('levelFilter').classList.remove('hidden');
+    document.getElementById('tagFilter').classList.remove('hidden');
+    document.getElementById('messageFilter').classList.remove('hidden');
+    document.getElementById('logTable').classList.remove('hidden');
+  };
+  reader.readAsText(file);
+}
+
+function parseLogContents(contents) {
+  const levels = {
+    'D': 'debug',
+    'I': 'info',
+    'W': 'warn',
+    'E': 'error',
+    'V': 'verbose'
+  };
+  
+  const lines = contents.split(/\r?\n/);
+  const tbody = document.querySelector("#logTable tbody");
+
+  lines.forEach((line) => {
+    const match = line.match(
+      /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s+(\d+-\d+)\s+(\S+)\s+(\S+)\s+([DIWEV])\s+(.+)/
+    );
+    if (match && match.length > 6) {
+      const tr = document.createElement('tr');
+      tr.className = levels[match[5]]; // Apply the class name based on the log level
+      
+      // Create a new cell for each group captured in the regex
+      for (let i = 1; i <= 5; i++) { // Capture groups 1-5 for the non-message columns
+        const td = document.createElement('td');
+        td.textContent = match[i];
+        tr.appendChild(td);
+      }
+      // The message is the entire rest of the line after the level, which is capture group 6
+      const tdMessage = document.createElement('td');
+      tdMessage.textContent = match[6];
+      tr.appendChild(tdMessage);
+
+      tbody.appendChild(tr);
+    }
+  });
+}
+
+function filterLogs() {
+  const levelFilter = document.getElementById('levelFilter').value.toUpperCase();
+  const tagFilter = document.getElementById('tagFilter').value.toUpperCase();
+  const messageFilter = document.getElementById('messageFilter').value.toUpperCase();
+  const table = document.getElementById('logTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    let tdLevel = tr[i].getElementsByTagName('td')[4];
+    let tdTag = tr[i].getElementsByTagName('td')[2];
+    let tdMessage = tr[i].getElementsByTagName('td')[5];
+    
+    if (tdLevel && tdTag && tdMessage) {
+      let levelText = tdLevel.textContent || tdLevel.innerText;
+      let tagText = tdTag.textContent || tdTag.innerText;
+      let messageText = tdMessage.textContent || tdMessage.innerText;
+
+      let levelMatches = levelFilter === '' || levelText.toUpperCase().indexOf(levelFilter) > -1;
+      let tagMatches = tagFilter === '' || tagText.toUpperCase().indexOf(tagFilter) > -1;
+      let messageMatches = messageFilter === '' || messageText.toUpperCase().indexOf(messageFilter) > -1;
+
+      if (levelMatches && tagMatches && messageMatches) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+</script>
+
+</body>
+</html>
